@@ -1,0 +1,13 @@
+{
+  "id": "others",
+  "label": {
+    "vi": "Others",
+    "en": "Others"
+  },
+  "dateRange": {
+    "start": "2024-03-01",
+    "end": "2024-05-29"
+  },
+  "integrationReady": true,
+  "metrics": []
+}

@@ -1,0 +1,498 @@
+{
+  "id": "google-review",
+  "label": {
+    "vi": "Google Review",
+    "en": "Google Review"
+  },
+  "dateRange": {
+    "start": "2024-03-01",
+    "end": "2024-05-29"
+  },
+  "metrics": [
+    {
+      "id": "rating_dist",
+      "group": {
+        "vi": "Rating",
+        "en": "Rating"
+      },
+      "label": {
+        "vi": "Phân bổ Rating",
+        "en": "Rating Distribution"
+      },
+      "description": {
+        "vi": "Phân bổ điểm 1-5",
+        "en": "Star rating 1-5 distribution"
+      },
+      "chartType": "distribution",
+      "valueType": "distribution",
+      "distribution": {
+        "daily": [
+          {
+            "id": "1",
+            "label": {
+              "vi": "1 sao",
+              "en": "1 star"
+            },
+            "value": 12
+          },
+          {
+            "id": "2",
+            "label": {
+              "vi": "2 sao",
+              "en": "2 stars"
+            },
+            "value": 8
+          },
+          {
+            "id": "3",
+            "label": {
+              "vi": "3 sao",
+              "en": "3 stars"
+            },
+            "value": 15.5
+          },
+          {
+            "id": "4",
+            "label": {
+              "vi": "4 sao",
+              "en": "4 stars"
+            },
+            "value": 24.2
+          },
+          {
+            "id": "5",
+            "label": {
+              "vi": "5 sao",
+              "en": "5 stars"
+            },
+            "value": 40.3
+          }
+        ],
+        "weekly": [
+          {
+            "id": "1",
+            "label": {
+              "vi": "1 sao",
+              "en": "1 star"
+            },
+            "value": 12.5
+          },
+          {
+            "id": "2",
+            "label": {
+              "vi": "2 sao",
+              "en": "2 stars"
+            },
+            "value": 8.1
+          },
+          {
+            "id": "3",
+            "label": {
+              "vi": "3 sao",
+              "en": "3 stars"
+            },
+            "value": 14.5
+          },
+          {
+            "id": "4",
+            "label": {
+              "vi": "4 sao",
+              "en": "4 stars"
+            },
+            "value": 25.1
+          },
+          {
+            "id": "5",
+            "label": {
+              "vi": "5 sao",
+              "en": "5 stars"
+            },
+            "value": 39.8
+          }
+        ],
+        "monthly": [
+          {
+            "id": "1",
+            "label": {
+              "vi": "1 sao",
+              "en": "1 star"
+            },
+            "value": 11.5
+          },
+          {
+            "id": "2",
+            "label": {
+              "vi": "2 sao",
+              "en": "2 stars"
+            },
+            "value": 7.5
+          },
+          {
+            "id": "3",
+            "label": {
+              "vi": "3 sao",
+              "en": "3 stars"
+            },
+            "value": 14.9
+          },
+          {
+            "id": "4",
+            "label": {
+              "vi": "4 sao",
+              "en": "4 stars"
+            },
+            "value": 25.1
+          },
+          {
+            "id": "5",
+            "label": {
+              "vi": "5 sao",
+              "en": "5 stars"
+            },
+            "value": 41
+          }
+        ]
+      },
+      "kpi": {
+        "value": 3.8,
+        "change": 0.2
+      }
+    },
+    {
+      "id": "negative_reasons",
+      "group": {
+        "vi": "Negative",
+        "en": "Negative"
+      },
+      "label": {
+        "vi": "Negative Review Reasons",
+        "en": "Negative Review Reasons"
+      },
+      "description": {
+        "vi": "Phân bổ lý do review thấp",
+        "en": "Negative review reason breakdown"
+      },
+      "chartType": "distribution",
+      "valueType": "distribution",
+      "distribution": {
+        "daily": [
+          {
+            "id": "gameplay",
+            "label": {
+              "vi": "Gameplay",
+              "en": "Gameplay"
+            },
+            "value": 18.1
+          },
+          {
+            "id": "matchmaking",
+            "label": {
+              "vi": "Matchmaking",
+              "en": "Matchmaking"
+            },
+            "value": 15.2
+          },
+          {
+            "id": "economy",
+            "label": {
+              "vi": "Economy",
+              "en": "Economy"
+            },
+            "value": 7.7
+          },
+          {
+            "id": "balance",
+            "label": {
+              "vi": "Balance",
+              "en": "Balance"
+            },
+            "value": 9.5
+          },
+          {
+            "id": "performance",
+            "label": {
+              "vi": "Performance",
+              "en": "Performance"
+            },
+            "value": 12.1
+          },
+          {
+            "id": "bug",
+            "label": {
+              "vi": "Bug",
+              "en": "Bug"
+            },
+            "value": 10.1
+          },
+          {
+            "id": "hack",
+            "label": {
+              "vi": "Hack/Cheat",
+              "en": "Hack/Cheat"
+            },
+            "value": 7.7
+          },
+          {
+            "id": "teamup",
+            "label": {
+              "vi": "Team-up",
+              "en": "Team-up"
+            },
+            "value": 15.4
+          },
+          {
+            "id": "nonspecific",
+            "label": {
+              "vi": "Không cụ thể",
+              "en": "Non-specific"
+            },
+            "value": 2
+          },
+          {
+            "id": "other",
+            "label": {
+              "vi": "Khác",
+              "en": "Other"
+            },
+            "value": 2.1
+          }
+        ],
+        "weekly": [
+          {
+            "id": "gameplay",
+            "label": {
+              "vi": "Gameplay",
+              "en": "Gameplay"
+            },
+            "value": 18.1
+          },
+          {
+            "id": "matchmaking",
+            "label": {
+              "vi": "Matchmaking",
+              "en": "Matchmaking"
+            },
+            "value": 15.4
+          },
+          {
+            "id": "economy",
+            "label": {
+              "vi": "Economy",
+              "en": "Economy"
+            },
+            "value": 8.2
+          },
+          {
+            "id": "balance",
+            "label": {
+              "vi": "Balance",
+              "en": "Balance"
+            },
+            "value": 10
+          },
+          {
+            "id": "performance",
+            "label": {
+              "vi": "Performance",
+              "en": "Performance"
+            },
+            "value": 11.5
+          },
+          {
+            "id": "bug",
+            "label": {
+              "vi": "Bug",
+              "en": "Bug"
+            },
+            "value": 10.2
+          },
+          {
+            "id": "hack",
+            "label": {
+              "vi": "Hack/Cheat",
+              "en": "Hack/Cheat"
+            },
+            "value": 8
+          },
+          {
+            "id": "teamup",
+            "label": {
+              "vi": "Team-up",
+              "en": "Team-up"
+            },
+            "value": 14.5
+          },
+          {
+            "id": "nonspecific",
+            "label": {
+              "vi": "Không cụ thể",
+              "en": "Non-specific"
+            },
+            "value": 2.1
+          },
+          {
+            "id": "other",
+            "label": {
+              "vi": "Khác",
+              "en": "Other"
+            },
+            "value": 1.9
+          }
+        ],
+        "monthly": [
+          {
+            "id": "gameplay",
+            "label": {
+              "vi": "Gameplay",
+              "en": "Gameplay"
+            },
+            "value": 16.9
+          },
+          {
+            "id": "matchmaking",
+            "label": {
+              "vi": "Matchmaking",
+              "en": "Matchmaking"
+            },
+            "value": 16.2
+          },
+          {
+            "id": "economy",
+            "label": {
+              "vi": "Economy",
+              "en": "Economy"
+            },
+            "value": 7.8
+          },
+          {
+            "id": "balance",
+            "label": {
+              "vi": "Balance",
+              "en": "Balance"
+            },
+            "value": 10.6
+          },
+          {
+            "id": "performance",
+            "label": {
+              "vi": "Performance",
+              "en": "Performance"
+            },
+            "value": 12.2
+          },
+          {
+            "id": "bug",
+            "label": {
+              "vi": "Bug",
+              "en": "Bug"
+            },
+            "value": 10.6
+          },
+          {
+            "id": "hack",
+            "label": {
+              "vi": "Hack/Cheat",
+              "en": "Hack/Cheat"
+            },
+            "value": 8.3
+          },
+          {
+            "id": "teamup",
+            "label": {
+              "vi": "Team-up",
+              "en": "Team-up"
+            },
+            "value": 13.2
+          },
+          {
+            "id": "nonspecific",
+            "label": {
+              "vi": "Không cụ thể",
+              "en": "Non-specific"
+            },
+            "value": 2.2
+          },
+          {
+            "id": "other",
+            "label": {
+              "vi": "Khác",
+              "en": "Other"
+            },
+            "value": 2.1
+          }
+        ]
+      }
+    },
+    {
+      "id": "positive_summary",
+      "group": {
+        "vi": "Positive",
+        "en": "Positive"
+      },
+      "label": {
+        "vi": "Positive Highlights",
+        "en": "Positive Highlights"
+      },
+      "description": {
+        "vi": "Tóm tắt review positive",
+        "en": "Positive review highlights"
+      },
+      "chartType": "table",
+      "valueType": "absolute",
+      "table": {
+        "columns": [
+          {
+            "vi": "Số lượng",
+            "en": "Count"
+          },
+          {
+            "vi": "% Positive",
+            "en": "% Positive"
+          }
+        ],
+        "rows": [
+          {
+            "label": {
+              "vi": "Gameplay hấp dẫn",
+              "en": "Engaging gameplay"
+            },
+            "values": [
+              142,
+              28
+            ]
+          },
+          {
+            "label": {
+              "vi": "Đồ họa đẹp",
+              "en": "Great visuals"
+            },
+            "values": [
+              98,
+              19
+            ]
+          },
+          {
+            "label": {
+              "vi": "Cơ chế extraction thú vị",
+              "en": "Fun extraction mechanics"
+            },
+            "values": [
+              76,
+              15
+            ]
+          },
+          {
+            "label": {
+              "vi": "Build đa dạng",
+              "en": "Diverse builds"
+            },
+            "values": [
+              54,
+              11
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

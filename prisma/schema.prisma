@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  STAFF
+  USER
+}
+
+enum IngestionRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id          String           @id @default(cuid())
+  googleSub   String           @unique
+  email       String           @unique
+  name        String?
+  avatarUrl   String?
+  status      UserStatus       @default(PENDING)
+  role        UserRole         @default(USER)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(6)
+  permissions UserPermission[]
+}
+
+model UserPermission {
+  userId        String
+  permissionKey String
+  granted       Boolean @default(false)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionKey])
+}
+
+model BeanDailyFact {
+  id        String   @id @default(cuid())
+  metricId  String
+  cluster   String   @default("platform:(hive,sg-cluster)")
+  dt        DateTime @db.Date
+  dimsKey   String   @default("{}")
+  dims      Json     @default("{}")
+  measures  Json
+  ingestedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([metricId, cluster, dt, dimsKey])
+  @@index([metricId, dt])
+  @@index([dt])
+}
+
+model IngestionWatermark {
+  metricId  String
+  cluster   String   @default("platform:(hive,sg-cluster)")
+  lastDt    DateTime @db.Date
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@id([metricId, cluster])
+}
+
+model IngestionRun {
+  id        String             @id @default(cuid())
+  mode      String
+  metricId  String?
+  startedAt DateTime           @default(now()) @db.Timestamptz(6)
+  finishedAt DateTime?         @db.Timestamptz(6)
+  status    IngestionRunStatus @default(RUNNING)
+  rowsUpserted Int             @default(0)
+  error     String?
+  meta      Json?
+
+  @@index([startedAt(sort: Desc)])
+}
+
+model Season {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([startDate, endDate])
+}
+
+enum ReportRunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model ReportRun {
+  id          String          @id @default(cuid())
+  type        String
+  rangeStart  DateTime        @db.Date
+  rangeEnd    DateTime        @db.Date
+  status      ReportRunStatus @default(PENDING)
+  html        String?
+  payloadJson Json?
+  model       String?
+  inputTokens Int?
+  outputTokens Int?
+  error       String?
+  createdBy   String?
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+
+  @@index([type, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
