@@ -37,7 +37,7 @@ Seed JSON fallback reads from `be/seed-data/` (override with `FE_PUBLIC_DATA_DIR
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Express + ingest cron every 2 hours (Asia/Ho_Chi_Minh; disable with `DISABLE_INGEST_CRON=true`) |
+| `npm run dev` | Express + ingest cron every 2h (Asia/Ho_Chi_Minh): today each run; yesterday also at 02:00 & 04:00 |
 | `npm run bean:smoke` | Test Bean API (`SELECT 1`) |
 | `npm run ingest:backfill` | Full historical backfill |
 | `npm run ingest:daily` | Incremental since watermark |

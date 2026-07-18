@@ -152,6 +152,19 @@ export async function loadSeedTemplate(tabId: string): Promise<TabData | null> {
 
 export type SeriesPoint = { date: string; value: number };
 
+export function factPlatform(platform: string) {
+  return (f: FactRow) => String(f.dims.platform ?? "all") === platform;
+}
+
+/** True when ios/android facts exist with non-zero values for a key measure. */
+export function platformBreakdownAvailable(facts: FactRow[], measureKey: string): boolean {
+  return facts.some((f) => {
+    const p = String(f.dims.platform ?? "");
+    if (p !== "ios" && p !== "android") return false;
+    return num(f.measures[measureKey]) > 0;
+  });
+}
+
 export function seriesFromMeasure(
   facts: FactRow[],
   specs: Array<{ id: string; key: string; label: LocalizedLabel; filter?: (f: FactRow) => boolean }>,

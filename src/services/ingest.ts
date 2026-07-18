@@ -8,8 +8,12 @@ import {
   addDays,
   dateRangeInclusive,
   formatDateOnly,
+  hourInTimeZone,
+  ingestTimeZone,
   parseDateOnly,
   stableDimsKey,
+  todayInIngestTz,
+  yesterdayInIngestTz,
   yesterdayUtc,
 } from "../utils/dates";
 import { runWithConcurrency } from "../utils/run-with-concurrency";
@@ -27,6 +31,26 @@ function dayRetries(): number {
 function ingestConcurrency(): number {
   const n = Number(process.env.BEAN_INGEST_CONCURRENCY ?? 4);
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 8) : 4;
+}
+
+const PLATFORM_METRICS = new Set(["new.user_retention", "active.active_user"]);
+
+async function pruneLegacyPlatformFacts(metricId: string, cluster: string, isoDate: string): Promise<void> {
+  if (!PLATFORM_METRICS.has(metricId)) return;
+  const dt = parseDateOnly(isoDate);
+  const rows = await prisma.beanDailyFact.findMany({
+    where: { metricId, cluster, dt },
+    select: { id: true, dims: true },
+  });
+  const hasExplicitPlatform = rows.some((r) => (r.dims as Record<string, unknown>).platform != null);
+  if (!hasExplicitPlatform) return;
+  const legacyIds = rows
+    .filter((r) => (r.dims as Record<string, unknown>).platform == null)
+    .map((r) => r.id);
+  if (legacyIds.length > 0) {
+    await prisma.beanDailyFact.deleteMany({ where: { id: { in: legacyIds } } });
+    console.log(`[ingest] ${metricId} ${isoDate}: pruned ${legacyIds.length} legacy row(s) without platform`);
+  }
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -138,6 +162,7 @@ export async function ingestMetricForDay(metricId: string, isoDate: string): Pro
 
   const facts = def.aggregate(parts, isoDate);
   const upserted = await upsertFacts(metricId, cfg.clusterUrn, facts);
+  await pruneLegacyPlatformFacts(metricId, cfg.clusterUrn, isoDate);
   return upserted;
 }
 
@@ -261,4 +286,39 @@ export async function dailyIngestAll(): Promise<void> {
     const n = await dailyIngestMetric(metricId);
     console.log(`[ingest] daily ${metricId}: ${n} rows`);
   }
+}
+
+/** Re-fetch explicit calendar days for every metric (upsert; ignores watermark). */
+export async function ingestDaysForAllMetrics(isoDates: string[]): Promise<void> {
+  const days = [...new Set(isoDates)].sort();
+  if (days.length === 0) return;
+
+  const cfg = getBeanConfig();
+  console.log(`[ingest] scheduled days: ${days.join(", ")} (${ingestScopeLabel()})`);
+
+  for (const metricId of getAllMetricIds()) {
+    let total = 0;
+    for (const iso of days) {
+      const n = await ingestMetricForDayWithRetry(metricId, iso);
+      total += n;
+      await advanceWatermark(metricId, cfg.clusterUrn, parseDateOnly(iso));
+    }
+    console.log(`[ingest] scheduled ${metricId}: ${total} rows`);
+  }
+}
+
+/**
+ * Cron ingest: always refresh today (VN tz).
+ * At 02:00 and 04:00 also refresh yesterday (Bean data often lands next morning).
+ */
+export async function scheduledIngest(now = new Date()): Promise<void> {
+  const tz = ingestTimeZone();
+  const hour = hourInTimeZone(now, tz);
+  const today = todayInIngestTz(now);
+  const days = [today];
+  if (hour === 2 || hour === 4) {
+    days.push(yesterdayInIngestTz(now));
+  }
+  console.log(`[cron] ingest ${hour}:00 ${tz} → days ${days.join(", ")}`);
+  await ingestDaysForAllMetrics(days);
 }

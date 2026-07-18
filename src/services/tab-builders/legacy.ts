@@ -1,9 +1,11 @@
 import type { TabData } from "../tabs.service";
 import {
   dateRangeFromFacts,
+  factPlatform,
   label,
   loadFacts,
   loadFactsByMetricIds,
+  platformBreakdownAvailable,
   seriesFromMeasure,
 } from "./core";
 import { kpiFromPoints } from "./template-utils";
@@ -19,7 +21,9 @@ function attachKpi<T extends { series?: Array<{ data?: { daily?: Array<{ date: s
 
 async function dauOverviewSeries(ipRegion: string) {
   const active = await loadFactsByMetricIds(["active.active_user"], ipRegion);
-  return seriesFromMeasure(active, [{ id: "dau", key: "dau", label: label("DAU (VN)", "DAU (VN)") }]);
+  return seriesFromMeasure(active, [
+    { id: "dau", key: "dau", label: label("DAU (VN)", "DAU (VN)"), filter: factPlatform("all") },
+  ]);
 }
 
 function contextDauMetric(dauSeries: ReturnType<typeof seriesFromMeasure>) {
@@ -45,11 +49,39 @@ export async function buildNewUserRetentionTab(ipRegion = "VN"): Promise<TabData
     { id: "r14", key: "r14", label: label("R14", "R14") },
     { id: "r30", key: "r30", label: label("R30", "R30") },
   ];
+  const retentionAll = seriesFromMeasure(
+    facts,
+    rateCols.map((c) => ({ ...c, filter: factPlatform("all") })),
+  );
+  const retentionIos = seriesFromMeasure(
+    facts,
+    rateCols.map((c) => ({ ...c, id: `${c.id}_ios`, filter: factPlatform("ios") })),
+  );
+  const retentionAndroid = seriesFromMeasure(
+    facts,
+    rateCols.map((c) => ({ ...c, id: `${c.id}_android`, filter: factPlatform("android") })),
+  );
+  const newUserAll = seriesFromMeasure(facts, [
+    { id: "new_user", key: "new_user", label: label("New User", "New User"), filter: factPlatform("all") },
+  ]);
+  const newUserIos = seriesFromMeasure(facts, [
+    { id: "new_user_ios", key: "new_user", label: label("New User iOS", "New User iOS"), filter: factPlatform("ios") },
+  ]);
+  const newUserAndroid = seriesFromMeasure(facts, [
+    {
+      id: "new_user_android",
+      key: "new_user",
+      label: label("New User Android", "New User Android"),
+      filter: factPlatform("android"),
+    },
+  ]);
   return {
     id: "new-user-retention",
     label: label("Retention Summary", "Retention Summary"),
     dateRange: dateRangeFromFacts(facts),
     integrationReady: true,
+    tabFilters: ["platform"],
+    platformBreakdownAvailable: platformBreakdownAvailable(facts, "new_user"),
     metrics: [
       attachKpi({
         id: "new_user_retention_table",
@@ -58,7 +90,7 @@ export async function buildNewUserRetentionTab(ipRegion = "VN"): Promise<TabData
         description: label("Retention R2-R30 by cohort date", "Retention R2-R30 by cohort date"),
         chartType: "trend",
         valueType: "percentage",
-        series: seriesFromMeasure(facts, rateCols),
+        series: [...retentionAll, ...retentionIos, ...retentionAndroid],
       }),
       attachKpi({
         id: "new_user_count",
@@ -67,10 +99,30 @@ export async function buildNewUserRetentionTab(ipRegion = "VN"): Promise<TabData
         description: label("Daily new register count", "Daily new register count"),
         chartType: "trend",
         valueType: "absolute",
-        series: seriesFromMeasure(facts, [
-          { id: "new_user", key: "new_user", label: label("New User", "New User") },
-        ]),
+        series: [...newUserAll, ...newUserIos, ...newUserAndroid],
       }),
+      {
+        id: "new_user_ios_kpi",
+        hideChart: true,
+        group: label("Volume", "Volume"),
+        label: label("New Users iOS", "New Users iOS"),
+        description: label("Daily new users on iOS", "Daily new users on iOS"),
+        chartType: "trend",
+        valueType: "absolute",
+        series: newUserIos,
+        kpi: kpiFromPoints(newUserIos[0]?.data.daily ?? []),
+      },
+      {
+        id: "new_user_android_kpi",
+        hideChart: true,
+        group: label("Volume", "Volume"),
+        label: label("New Users Android", "New Users Android"),
+        description: label("Daily new users on Android", "Daily new users on Android"),
+        chartType: "trend",
+        valueType: "absolute",
+        series: newUserAndroid,
+        kpi: kpiFromPoints(newUserAndroid[0]?.data.daily ?? []),
+      },
     ],
   };
 }
@@ -114,12 +166,52 @@ export async function buildNewDeviceRetentionTab(ipRegion = "VN"): Promise<TabDa
 
 export async function buildActiveUserTab(ipRegion = "VN"): Promise<TabData> {
   const facts = await loadFacts("active-user", ipRegion);
-  const dauSeries = seriesFromMeasure(facts, [{ id: "dau", key: "dau", label: label("DAU", "DAU") }]);
+  const dauAll = seriesFromMeasure(facts, [
+    { id: "dau", key: "dau", label: label("DAU", "DAU"), filter: factPlatform("all") },
+  ]);
+  const dauIos = seriesFromMeasure(facts, [
+    { id: "dau_ios", key: "dau", label: label("DAU iOS", "DAU iOS"), filter: factPlatform("ios") },
+  ]);
+  const dauAndroid = seriesFromMeasure(facts, [
+    { id: "dau_android", key: "dau", label: label("DAU Android", "DAU Android"), filter: factPlatform("android") },
+  ]);
+  const rollCols = [
+    { id: "a2", key: "a2", label: label("A2", "A2") },
+    { id: "a7", key: "a7", label: label("A7", "A7") },
+    { id: "a14", key: "a14", label: label("A14", "A14") },
+    { id: "a30", key: "a30", label: label("A30", "A30") },
+  ];
+  const arCols = [
+    { id: "ar2", key: "ar2", label: label("Ar2", "Ar2") },
+    { id: "ar7", key: "ar7", label: label("Ar7", "Ar7") },
+    { id: "ar14", key: "ar14", label: label("Ar14", "Ar14") },
+    { id: "ar30", key: "ar30", label: label("Ar30", "Ar30") },
+  ];
+  const rollingSeries = (platform: string) =>
+    seriesFromMeasure(
+      facts,
+      rollCols.map((c) => ({
+        ...c,
+        id: platform === "all" ? c.id : `${c.id}_${platform}`,
+        filter: factPlatform(platform),
+      })),
+    );
+  const arSeries = (platform: string) =>
+    seriesFromMeasure(
+      facts,
+      arCols.map((c) => ({
+        ...c,
+        id: platform === "all" ? c.id : `${c.id}_${platform}`,
+        filter: factPlatform(platform),
+      })),
+    );
   return {
     id: "active-user",
     label: label("Active User", "Active User"),
     dateRange: dateRangeFromFacts(facts),
     integrationReady: true,
+    tabFilters: ["platform"],
+    platformBreakdownAvailable: platformBreakdownAvailable(facts, "dau"),
     metrics: [
       attachKpi({
         id: "dau_trend",
@@ -128,8 +220,30 @@ export async function buildActiveUserTab(ipRegion = "VN"): Promise<TabData> {
         description: label("Daily active users", "Daily active users"),
         chartType: "trend",
         valueType: "absolute",
-        series: dauSeries,
+        series: [...dauAll, ...dauIos, ...dauAndroid],
       }),
+      {
+        id: "dau_ios_kpi",
+        hideChart: true,
+        group: label("DAU", "DAU"),
+        label: label("DAU iOS", "DAU iOS"),
+        description: label("Daily active users on iOS", "Daily active users on iOS"),
+        chartType: "trend",
+        valueType: "absolute",
+        series: dauIos,
+        kpi: kpiFromPoints(dauIos[0]?.data.daily ?? []),
+      },
+      {
+        id: "dau_android_kpi",
+        hideChart: true,
+        group: label("DAU", "DAU"),
+        label: label("DAU Android", "DAU Android"),
+        description: label("Daily active users on Android", "Daily active users on Android"),
+        chartType: "trend",
+        valueType: "absolute",
+        series: dauAndroid,
+        kpi: kpiFromPoints(dauAndroid[0]?.data.daily ?? []),
+      },
       {
         id: "rolling_active",
         group: label("Rolling Active", "Rolling Active"),
@@ -137,12 +251,7 @@ export async function buildActiveUserTab(ipRegion = "VN"): Promise<TabData> {
         description: label("Rolling active users", "Rolling active users"),
         chartType: "trend",
         valueType: "absolute",
-        series: seriesFromMeasure(facts, [
-          { id: "a2", key: "a2", label: label("A2", "A2") },
-          { id: "a7", key: "a7", label: label("A7", "A7") },
-          { id: "a14", key: "a14", label: label("A14", "A14") },
-          { id: "a30", key: "a30", label: label("A30", "A30") },
-        ]),
+        series: [...rollingSeries("all"), ...rollingSeries("ios"), ...rollingSeries("android")],
       },
       {
         id: "active_retention_rates",
@@ -151,12 +260,7 @@ export async function buildActiveUserTab(ipRegion = "VN"): Promise<TabData> {
         description: label("Active user retention rates", "Active user retention rates"),
         chartType: "trend",
         valueType: "percentage",
-        series: seriesFromMeasure(facts, [
-          { id: "ar2", key: "ar2", label: label("Ar2", "Ar2") },
-          { id: "ar7", key: "ar7", label: label("Ar7", "Ar7") },
-          { id: "ar14", key: "ar14", label: label("Ar14", "Ar14") },
-          { id: "ar30", key: "ar30", label: label("Ar30", "Ar30") },
-        ]),
+        series: [...arSeries("all"), ...arSeries("ios"), ...arSeries("android")],
       },
     ],
   };

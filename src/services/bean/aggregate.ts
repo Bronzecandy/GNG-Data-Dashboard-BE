@@ -1,14 +1,15 @@
 import { num, pct } from "./row-utils";
 import { scopedDims } from "./ingest-scope";
+import { PLATFORM_ALL, PLATFORM_ANDROID, PLATFORM_IOS } from "./platform";
 import { normalizeHeroIds } from "./mappings";
 import type { MetricFactRow } from "./queries";
 
 type Row = Record<string, unknown>;
 
-function fact(isoDate: string, measures: Record<string, unknown>): MetricFactRow {
+function fact(isoDate: string, measures: Record<string, unknown>, platform = PLATFORM_ALL): MetricFactRow {
   return {
     dt: isoDate,
-    dims: scopedDims(),
+    dims: { ...scopedDims(), platform },
     measures,
   };
 }
@@ -26,11 +27,22 @@ function retentionMeasures(row: Row): Record<string, unknown> {
   return out;
 }
 
-/** new.user_retention — one aggregated row (SQL: COUNT + AVG(flag)*100) */
-export function aggregateNewUserRetention(rows: Row[], isoDate: string): MetricFactRow[] {
-  const row = one(rows);
-  if (!row) return [];
-  return [fact(isoDate, { new_user: num(row.new_user), ...retentionMeasures(row) })];
+/** new.user_retention — total + per-platform (iOS/Android) */
+export function aggregateNewUserRetention(parts: Row[][], isoDate: string): MetricFactRow[] {
+  const out: MetricFactRow[] = [];
+  const total = one(parts[0]);
+  if (total) {
+    out.push(fact(isoDate, { new_user: num(total.new_user), ...retentionMeasures(total) }, PLATFORM_ALL));
+  }
+  const ios = one(parts[1]);
+  if (ios) {
+    out.push(fact(isoDate, { new_user: num(ios.new_user), ...retentionMeasures(ios) }, PLATFORM_IOS));
+  }
+  const android = one(parts[2]);
+  if (android) {
+    out.push(fact(isoDate, { new_user: num(android.new_user), ...retentionMeasures(android) }, PLATFORM_ANDROID));
+  }
+  return out;
 }
 
 export function aggregateNewDeviceRetention(rows: Row[], isoDate: string): MetricFactRow[] {
@@ -39,37 +51,147 @@ export function aggregateNewDeviceRetention(rows: Row[], isoDate: string): Metri
   return [fact(isoDate, { new_device: num(row.new_device), ...retentionMeasures(row) })];
 }
 
-export function aggregateActiveUser(
-  dwsRows: Row[],
-  dmRows: Row[],
-  retRows: Row[],
-  isoDate: string,
-): MetricFactRow[] {
-  const dws = one(dwsRows);
-  const dm = one(dmRows);
-  const ret = one(retRows);
-  const dau = num(dws?.dau);
-  return [
-    fact(isoDate, {
-      dau,
-      a2: num(dm?.a2),
-      a3: num(dm?.a3),
-      a4: num(dm?.a4),
-      a5: num(dm?.a5),
-      a6: num(dm?.a6),
-      a7: num(dm?.a7),
-      a14: num(dm?.a14),
-      a30: num(dm?.a30),
-      ar2: pct(ret?.ar2),
-      ar3: pct(ret?.ar3),
-      ar4: pct(ret?.ar4),
-      ar5: pct(ret?.ar5),
-      ar6: pct(ret?.ar6),
-      ar7: pct(ret?.ar7),
-      ar14: pct(ret?.ar14),
-      ar30: pct(ret?.ar30),
-    }),
-  ];
+export function aggregateActiveUser(parts: Row[][], isoDate: string): MetricFactRow[] {
+  const dwsTotal = one(parts[0]);
+  const dwsIos = one(parts[1]);
+  const dwsAndroid = one(parts[2]);
+  const dmTotal = one(parts[3]);
+  const dmIos = one(parts[4]);
+  const dmAndroid = one(parts[5]);
+  const retTotal = one(parts[6]);
+  const retIos = one(parts[7]);
+  const retAndroid = one(parts[8]);
+
+  type Acc = {
+    dau?: number;
+    a2?: number;
+    a3?: number;
+    a4?: number;
+    a5?: number;
+    a6?: number;
+    a7?: number;
+    a14?: number;
+    a30?: number;
+    ar2?: number;
+    ar3?: number;
+    ar4?: number;
+    ar5?: number;
+    ar6?: number;
+    ar7?: number;
+    ar14?: number;
+    ar30?: number;
+  };
+
+  const byPlatform = new Map<string, Acc>();
+  const touch = (p: string): Acc => {
+    let acc = byPlatform.get(p);
+    if (!acc) {
+      acc = {};
+      byPlatform.set(p, acc);
+    }
+    return acc;
+  };
+
+  if (dwsTotal) touch(PLATFORM_ALL).dau = num(dwsTotal.dau);
+  if (dwsIos) touch(PLATFORM_IOS).dau = num(dwsIos.dau);
+  if (dwsAndroid) touch(PLATFORM_ANDROID).dau = num(dwsAndroid.dau);
+  if (dmTotal) {
+    const a = touch(PLATFORM_ALL);
+    a.a2 = num(dmTotal.a2);
+    a.a3 = num(dmTotal.a3);
+    a.a4 = num(dmTotal.a4);
+    a.a5 = num(dmTotal.a5);
+    a.a6 = num(dmTotal.a6);
+    a.a7 = num(dmTotal.a7);
+    a.a14 = num(dmTotal.a14);
+    a.a30 = num(dmTotal.a30);
+  }
+  if (dmIos) {
+    const a = touch(PLATFORM_IOS);
+    a.a2 = num(dmIos.a2);
+    a.a3 = num(dmIos.a3);
+    a.a4 = num(dmIos.a4);
+    a.a5 = num(dmIos.a5);
+    a.a6 = num(dmIos.a6);
+    a.a7 = num(dmIos.a7);
+    a.a14 = num(dmIos.a14);
+    a.a30 = num(dmIos.a30);
+  }
+  if (dmAndroid) {
+    const a = touch(PLATFORM_ANDROID);
+    a.a2 = num(dmAndroid.a2);
+    a.a3 = num(dmAndroid.a3);
+    a.a4 = num(dmAndroid.a4);
+    a.a5 = num(dmAndroid.a5);
+    a.a6 = num(dmAndroid.a6);
+    a.a7 = num(dmAndroid.a7);
+    a.a14 = num(dmAndroid.a14);
+    a.a30 = num(dmAndroid.a30);
+  }
+  if (retTotal) {
+    const a = touch(PLATFORM_ALL);
+    a.ar2 = pct(retTotal.ar2);
+    a.ar3 = pct(retTotal.ar3);
+    a.ar4 = pct(retTotal.ar4);
+    a.ar5 = pct(retTotal.ar5);
+    a.ar6 = pct(retTotal.ar6);
+    a.ar7 = pct(retTotal.ar7);
+    a.ar14 = pct(retTotal.ar14);
+    a.ar30 = pct(retTotal.ar30);
+  }
+  if (retIos) {
+    const a = touch(PLATFORM_IOS);
+    a.ar2 = pct(retIos.ar2);
+    a.ar3 = pct(retIos.ar3);
+    a.ar4 = pct(retIos.ar4);
+    a.ar5 = pct(retIos.ar5);
+    a.ar6 = pct(retIos.ar6);
+    a.ar7 = pct(retIos.ar7);
+    a.ar14 = pct(retIos.ar14);
+    a.ar30 = pct(retIos.ar30);
+  }
+  if (retAndroid) {
+    const a = touch(PLATFORM_ANDROID);
+    a.ar2 = pct(retAndroid.ar2);
+    a.ar3 = pct(retAndroid.ar3);
+    a.ar4 = pct(retAndroid.ar4);
+    a.ar5 = pct(retAndroid.ar5);
+    a.ar6 = pct(retAndroid.ar6);
+    a.ar7 = pct(retAndroid.ar7);
+    a.ar14 = pct(retAndroid.ar14);
+    a.ar30 = pct(retAndroid.ar30);
+  }
+
+  const out: MetricFactRow[] = [];
+  for (const [platform, acc] of byPlatform) {
+    if (platform !== PLATFORM_ALL && acc.dau == null && acc.a2 == null && acc.ar2 == null) continue;
+    out.push(
+      fact(
+        isoDate,
+        {
+          dau: num(acc.dau),
+          a2: num(acc.a2),
+          a3: num(acc.a3),
+          a4: num(acc.a4),
+          a5: num(acc.a5),
+          a6: num(acc.a6),
+          a7: num(acc.a7),
+          a14: num(acc.a14),
+          a30: num(acc.a30),
+          ar2: num(acc.ar2),
+          ar3: num(acc.ar3),
+          ar4: num(acc.ar4),
+          ar5: num(acc.ar5),
+          ar6: num(acc.ar6),
+          ar7: num(acc.ar7),
+          ar14: num(acc.ar14),
+          ar30: num(acc.ar30),
+        },
+        platform,
+      ),
+    );
+  }
+  return out;
 }
 
 export function aggregateOnlineTime(rows: Row[], isoDate: string): MetricFactRow[] {

@@ -31,6 +31,8 @@ export interface TabData {
   metrics: unknown[];
   tabFilters?: string[];
   integrationReady?: boolean;
+  /** iOS/Android split available in source (system_platform populated). */
+  platformBreakdownAvailable?: boolean;
   heroBalance?: import("./hero-balance-tab").HeroBalancePayload;
 }
 

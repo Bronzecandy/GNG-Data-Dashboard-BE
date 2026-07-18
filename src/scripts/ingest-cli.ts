@@ -1,6 +1,7 @@
 import "../load-env";
 import { prisma } from "../utils/prisma";
-import { backfillAll, backfillMetric, dailyIngestAll } from "../services/ingest";
+import { backfillAll, backfillMetric, dailyIngestAll, ingestDaysForAllMetrics, scheduledIngest } from "../services/ingest";
+import { todayInIngestTz, yesterdayInIngestTz } from "../utils/dates";
 import { formatDateOnly, yesterdayUtc } from "../utils/dates";
 
 async function main() {
@@ -23,7 +24,30 @@ async function main() {
     await dailyIngestAll();
     return;
   }
-  console.error("Usage: ingest-cli.ts backfill [startDate] [endDate] [metricId] | daily");
+  if (mode === "scheduled") {
+    const hourArg = process.argv[3];
+    if (hourArg !== undefined) {
+      const h = Number(hourArg);
+      const days = [todayInIngestTz()];
+      if (h === 2 || h === 4) days.push(yesterdayInIngestTz());
+      console.log(`[ingest] scheduled simulate hour=${h} days=${days.join(", ")}`);
+      await ingestDaysForAllMetrics(days);
+    } else {
+      await scheduledIngest();
+    }
+    return;
+  }
+  if (mode === "days") {
+    const days = process.argv.slice(3).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
+    if (days.length === 0) {
+      console.error("Usage: ingest-cli.ts days YYYY-MM-DD [YYYY-MM-DD ...]");
+      process.exit(1);
+    }
+    console.log(`[ingest] force refresh days: ${days.join(", ")}`);
+    await ingestDaysForAllMetrics(days);
+    return;
+  }
+  console.error("Usage: ingest-cli.ts backfill [start] [end] [metricId] | daily | scheduled [hour] | days YYYY-MM-DD ...");
   process.exit(1);
 }
 

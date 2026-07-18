@@ -19,6 +19,7 @@
     "ingest:qa": "tsx src/scripts/ingest-qa.ts",
     "ingest:reset": "tsx src/scripts/ingest-reset.ts",
     "ingest:daily": "tsx src/scripts/ingest-cli.ts daily",
+    "ingest:scheduled": "tsx src/scripts/ingest-cli.ts scheduled",
     "ingest:gaps": "tsx src/scripts/backfill-missing-days.ts",
     "verify:tabs": "tsx src/scripts/verify-tabs.ts",
     "sync:seed": "node scripts/sync-seed-from-fe.mjs",

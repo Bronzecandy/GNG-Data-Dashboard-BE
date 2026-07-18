@@ -23,6 +23,7 @@ import {
   perfSessionStatsSql,
 } from "./metric-sql";
 import { heroBalanceSql } from "./hero-balance-sql";
+import { platformAndroidWhereSql, platformIosWhereSql } from "./platform";
 
 export type Grain = "daily";
 
@@ -76,15 +77,33 @@ export const METRIC_REGISTRY: Record<string, MetricQueryDef> = {
     metricId: "new.user_retention",
     tabId: "new-user-retention",
     grain: "daily",
-    rawSql: (localDt) => [
-      `SELECT COUNT(*) AS new_user,
-              ${retPct("is_r2", "r2")}, ${retPct("is_r3", "r3")}, ${retPct("is_r4", "r4")},
-              ${retPct("is_r5", "r5")}, ${retPct("is_r6", "r6")}, ${retPct("is_r7", "r7")},
-              ${retPct("is_r14", "r14")}, ${retPct("is_r30", "r30")}
-       FROM gng_cooked_ob.dws_user_register_account_retention_d_i
-       WHERE ${dayFilter(localDt, { regionCol: "region", ipRegionCol: "ip_region" })}`,
-    ],
-    aggregate: ([rows], iso) => aggregateNewUserRetention(rows, iso),
+    rawSql: (localDt) => {
+      const where = dayFilter(localDt, { regionCol: "region", ipRegionCol: "ip_region" });
+      const plat = "system_platform";
+      const iosWhere = `${where} AND ${platformIosWhereSql(plat)}`;
+      const androidWhere = `${where} AND ${platformAndroidWhereSql(plat)}`;
+      return [
+        `SELECT COUNT(*) AS new_user,
+                ${retPct("is_r2", "r2")}, ${retPct("is_r3", "r3")}, ${retPct("is_r4", "r4")},
+                ${retPct("is_r5", "r5")}, ${retPct("is_r6", "r6")}, ${retPct("is_r7", "r7")},
+                ${retPct("is_r14", "r14")}, ${retPct("is_r30", "r30")}
+         FROM gng_cooked_ob.dws_user_register_account_retention_d_i
+         WHERE ${where}`,
+        `SELECT COUNT(*) AS new_user,
+                ${retPct("is_r2", "r2")}, ${retPct("is_r3", "r3")}, ${retPct("is_r4", "r4")},
+                ${retPct("is_r5", "r5")}, ${retPct("is_r6", "r6")}, ${retPct("is_r7", "r7")},
+                ${retPct("is_r14", "r14")}, ${retPct("is_r30", "r30")}
+         FROM gng_cooked_ob.dws_user_register_account_retention_d_i
+         WHERE ${iosWhere}`,
+        `SELECT COUNT(*) AS new_user,
+                ${retPct("is_r2", "r2")}, ${retPct("is_r3", "r3")}, ${retPct("is_r4", "r4")},
+                ${retPct("is_r5", "r5")}, ${retPct("is_r6", "r6")}, ${retPct("is_r7", "r7")},
+                ${retPct("is_r14", "r14")}, ${retPct("is_r30", "r30")}
+         FROM gng_cooked_ob.dws_user_register_account_retention_d_i
+         WHERE ${androidWhere}`,
+      ];
+    },
+    aggregate: (parts, iso) => aggregateNewUserRetention(parts, iso),
   },
 
   "new.device_retention": {
@@ -106,24 +125,62 @@ export const METRIC_REGISTRY: Record<string, MetricQueryDef> = {
     metricId: "active.active_user",
     tabId: "active-user",
     grain: "daily",
-    rawSql: (localDt) => [
-      // DAU: per-account daily active (matches CSV); available from ~2025-01-02
-      `SELECT COUNT(*) AS dau
-       FROM gng_cooked_ob.dws_user_active_account_d_i
-       WHERE ${dayFilter(localDt, { ipRegionCol: "last_active_ip_region" })}`,
-      // A2–A30 rollups from dm (only populated ~2025-12+; optional enrichment)
-      `SELECT SUM(A2) AS a2, SUM(A3) AS a3, SUM(A4) AS a4, SUM(A5) AS a5,
-              SUM(A6) AS a6, SUM(A7) AS a7, SUM(A14) AS a14, SUM(A30) AS a30
-       FROM gng_cooked_ob.dm_user_active_account_1d_i
-       WHERE ${dayFilter(localDt, { ipRegionCol: "ip_region" })}`,
-      // Active retention % — server region is last_active_region, not region
-      `SELECT ${retPct("is_ar2", "ar2")}, ${retPct("is_ar3", "ar3")}, ${retPct("is_ar4", "ar4")},
-              ${retPct("is_ar5", "ar5")}, ${retPct("is_ar6", "ar6")}, ${retPct("is_ar7", "ar7")},
-              ${retPct("is_ar14", "ar14")}, ${retPct("is_ar30", "ar30")}
-       FROM gng_cooked_ob.dws_user_active_account_retention_d_i
-       WHERE ${dayFilter(localDt, { regionCol: "last_active_region", ipRegionCol: "last_active_ip_region" })}`,
-    ],
-    aggregate: ([dws, dm, ret], iso) => aggregateActiveUser(dws, dm, ret, iso),
+    rawSql: (localDt) => {
+      const dwsWhere = dayFilter(localDt, { ipRegionCol: "last_active_ip_region" });
+      const dmWhere = dayFilter(localDt, { ipRegionCol: "ip_region" });
+      const retWhere = dayFilter(localDt, {
+        regionCol: "last_active_region",
+        ipRegionCol: "last_active_ip_region",
+      });
+      const dwsPlat = "last_active_system_platform";
+      const dmPlat = "system_platform";
+      const retPlat = "last_active_system_platform";
+      const dwsIosWhere = `${dwsWhere} AND ${platformIosWhereSql(dwsPlat)}`;
+      const dwsAndroidWhere = `${dwsWhere} AND ${platformAndroidWhereSql(dwsPlat)}`;
+      const dmIosWhere = `${dmWhere} AND ${platformIosWhereSql(dmPlat)}`;
+      const dmAndroidWhere = `${dmWhere} AND ${platformAndroidWhereSql(dmPlat)}`;
+      const retIosWhere = `${retWhere} AND ${platformIosWhereSql(retPlat)}`;
+      const retAndroidWhere = `${retWhere} AND ${platformAndroidWhereSql(retPlat)}`;
+      return [
+        `SELECT COUNT(*) AS dau
+         FROM gng_cooked_ob.dws_user_active_account_d_i
+         WHERE ${dwsWhere}`,
+        `SELECT COUNT(*) AS dau
+         FROM gng_cooked_ob.dws_user_active_account_d_i
+         WHERE ${dwsIosWhere}`,
+        `SELECT COUNT(*) AS dau
+         FROM gng_cooked_ob.dws_user_active_account_d_i
+         WHERE ${dwsAndroidWhere}`,
+        `SELECT SUM(A2) AS a2, SUM(A3) AS a3, SUM(A4) AS a4, SUM(A5) AS a5,
+                SUM(A6) AS a6, SUM(A7) AS a7, SUM(A14) AS a14, SUM(A30) AS a30
+         FROM gng_cooked_ob.dm_user_active_account_1d_i
+         WHERE ${dmWhere}`,
+        `SELECT SUM(A2) AS a2, SUM(A3) AS a3, SUM(A4) AS a4, SUM(A5) AS a5,
+                SUM(A6) AS a6, SUM(A7) AS a7, SUM(A14) AS a14, SUM(A30) AS a30
+         FROM gng_cooked_ob.dm_user_active_account_1d_i
+         WHERE ${dmIosWhere}`,
+        `SELECT SUM(A2) AS a2, SUM(A3) AS a3, SUM(A4) AS a4, SUM(A5) AS a5,
+                SUM(A6) AS a6, SUM(A7) AS a7, SUM(A14) AS a14, SUM(A30) AS a30
+         FROM gng_cooked_ob.dm_user_active_account_1d_i
+         WHERE ${dmAndroidWhere}`,
+        `SELECT ${retPct("is_ar2", "ar2")}, ${retPct("is_ar3", "ar3")}, ${retPct("is_ar4", "ar4")},
+                ${retPct("is_ar5", "ar5")}, ${retPct("is_ar6", "ar6")}, ${retPct("is_ar7", "ar7")},
+                ${retPct("is_ar14", "ar14")}, ${retPct("is_ar30", "ar30")}
+         FROM gng_cooked_ob.dws_user_active_account_retention_d_i
+         WHERE ${retWhere}`,
+        `SELECT ${retPct("is_ar2", "ar2")}, ${retPct("is_ar3", "ar3")}, ${retPct("is_ar4", "ar4")},
+                ${retPct("is_ar5", "ar5")}, ${retPct("is_ar6", "ar6")}, ${retPct("is_ar7", "ar7")},
+                ${retPct("is_ar14", "ar14")}, ${retPct("is_ar30", "ar30")}
+         FROM gng_cooked_ob.dws_user_active_account_retention_d_i
+         WHERE ${retIosWhere}`,
+        `SELECT ${retPct("is_ar2", "ar2")}, ${retPct("is_ar3", "ar3")}, ${retPct("is_ar4", "ar4")},
+                ${retPct("is_ar5", "ar5")}, ${retPct("is_ar6", "ar6")}, ${retPct("is_ar7", "ar7")},
+                ${retPct("is_ar14", "ar14")}, ${retPct("is_ar30", "ar30")}
+         FROM gng_cooked_ob.dws_user_active_account_retention_d_i
+         WHERE ${retAndroidWhere}`,
+      ];
+    },
+    aggregate: (parts, iso) => aggregateActiveUser(parts, iso),
   },
 
   "active.online_time": {

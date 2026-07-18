@@ -36,6 +36,41 @@ export function yesterdayUtc(): Date {
   return y;
 }
 
+const DEFAULT_INGEST_TZ = "Asia/Ho_Chi_Minh";
+
+/** Calendar date YYYY-MM-DD in a given IANA timezone (e.g. Asia/Ho_Chi_Minh). */
+export function formatDateInTimeZone(date: Date, timeZone = DEFAULT_INGEST_TZ): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/** Hour 0–23 in a given IANA timezone. */
+export function hourInTimeZone(date: Date, timeZone = DEFAULT_INGEST_TZ): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    hour12: false,
+  }).formatToParts(date);
+  const hour = parts.find((p) => p.type === "hour")?.value ?? "0";
+  return Number(hour) % 24;
+}
+
+export function ingestTimeZone(): string {
+  return process.env.INGEST_TIMEZONE?.trim() || DEFAULT_INGEST_TZ;
+}
+
+export function todayInIngestTz(now = new Date()): string {
+  return formatDateInTimeZone(now, ingestTimeZone());
+}
+
+export function yesterdayInIngestTz(now = new Date()): string {
+  return formatDateOnly(addDays(parseDateOnly(todayInIngestTz(now)), -1));
+}
+
 export function dateRangeInclusive(from: Date, to: Date): Date[] {
   const out: Date[] = [];
   let cur = from;

@@ -2,6 +2,7 @@ import type { TabData } from "../tabs.service";
 import { deathReasonBucket, deviceTier, serverFromGsIp } from "../bean/mappings";
 import {
   dateRangeFromFacts,
+  factPlatform,
   label,
   loadFacts,
   loadFactsByMetricIds,
@@ -40,13 +41,17 @@ async function loadSharedContext(ipRegion: string) {
     loadFactsByMetricIds(["new.device_retention"], ipRegion),
   ]);
   return {
-    context_dau: seriesFromMeasure(active, [{ id: "dau", key: "dau", label: label("DAU", "DAU") }])[0]?.data.daily ?? [],
+    context_dau: seriesFromMeasure(active, [
+      { id: "dau", key: "dau", label: label("DAU", "DAU"), filter: factPlatform("all") },
+    ])[0]?.data.daily ?? [],
     context_new_user:
-      seriesFromMeasure(newUser, [{ id: "new_user", key: "new_user", label: label("New User", "New User") }])[0]?.data
-        .daily ?? [],
+      seriesFromMeasure(newUser, [
+        { id: "new_user", key: "new_user", label: label("New User", "New User"), filter: factPlatform("all") },
+      ])[0]?.data.daily ?? [],
     context_new_device:
-      seriesFromMeasure(newDevice, [{ id: "new_device", key: "new_device", label: label("New Device", "New Device") }])[0]
-        ?.data.daily ?? [],
+      seriesFromMeasure(newDevice, [
+        { id: "new_device", key: "new_device", label: label("New Device", "New Device") },
+      ])[0]?.data.daily ?? [],
   };
 }
 
